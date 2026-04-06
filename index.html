@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LoL Advisor</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Rajdhani:wght@400;500;600;700&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+:root{--gold:#C89B3C;--gold-light:#F0E6B2;--gold-dark:#785A28;--blue:#0BC4E3;--bg:#010A13;--panel:#0D1117;--panel2:#111923;--text:#A09B8C;--text-light:#C8AA6E;--red:#C23B2D;--green:#1E7A4A;--rune-bg:#0F1923;}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text-light);font-family:'Exo 2',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(ellipse 80% 50% at 50% -20%,rgba(11,196,227,.08) 0%,transparent 70%),url("data:image/svg+xml,%3Csvg width='60' height='52' viewBox='0 0 60 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0 L60 17.3 L60 34.6 L30 52 L0 34.6 L0 17.3 Z' fill='none' stroke='%23C89B3C' stroke-width='0.3' opacity='0.08'/%3E%3C/svg%3E");background-size:cover,60px 52px;pointer-events:none;z-index:0;}
+.wrapper{position:relative;z-index:1;max-width:920px;margin:0 auto;padding:28px 16px 60px;}
+header{text-align:center;padding:16px 0 22px;}
+header h1{font-family:'Cinzel Decorative',serif;font-size:clamp(1.3rem,4vw,2rem);color:var(--gold-light);text-shadow:0 0 30px rgba(200,155,60,.5);letter-spacing:2px;}
+header p{color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.95rem;margin-top:5px;letter-spacing:1px;}
+.divider{display:flex;align-items:center;gap:10px;margin:12px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dark),transparent);}
+.divider span{color:var(--gold);}
+.suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px;}
+.sugg-btn{background:var(--panel2);border:1px solid var(--gold-dark);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:600;padding:5px 12px;cursor:pointer;transition:all .2s;}
+.sugg-btn:hover{border-color:var(--gold);color:var(--gold-light);}
+.search-area{display:flex;gap:10px;margin-bottom:16px;}
+.search-wrapper{position:relative;flex:1;}
+.search-wrapper input{width:100%;background:var(--panel);border:1px solid var(--gold-dark);color:var(--gold-light);font-family:'Rajdhani',sans-serif;font-size:1.05rem;font-weight:600;padding:13px 16px;outline:none;transition:border-color .3s,box-shadow .3s;clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));}
+.search-wrapper input::placeholder{color:var(--text);opacity:.6;}
+.search-wrapper input:focus{border-color:var(--gold);box-shadow:0 0 18px rgba(200,155,60,.2);}
+.champ-dropdown{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:#0D1117;border:1px solid var(--gold-dark);border-top:2px solid var(--gold);max-height:260px;overflow-y:auto;z-index:200;scrollbar-width:thin;scrollbar-color:var(--gold-dark) transparent;}
+.champ-dropdown.open{display:block;}
+.dd-item{padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:9px;transition:background .15s,color .15s;}
+.dd-item:hover,.dd-item.focused{background:rgba(200,155,60,.1);color:var(--gold-light);}
+.dd-item .dd-role{font-size:.68rem;color:var(--gold-dark);margin-left:auto;letter-spacing:1px;text-transform:uppercase;}
+.search-btn{background:linear-gradient(135deg,var(--gold-dark),var(--gold));border:none;color:var(--bg);font-family:'Cinzel Decorative',serif;font-size:.8rem;font-weight:700;padding:13px 20px;cursor:pointer;transition:all .3s;clip-path:polygon(10px 0,100% 0,100% calc(100% - 10px),calc(100% - 10px) 100%,0 100%,0 10px);white-space:nowrap;}
+.search-btn:hover{background:linear-gradient(135deg,var(--gold),var(--gold-light));box-shadow:0 0 20px rgba(200,155,60,.4);}
+.panel-card{background:var(--panel);border:1px solid var(--gold-dark);padding:18px 20px;margin-bottom:13px;display:none;clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));}
+.panel-card.visible{display:block;}
+.panel-card h3{font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;margin-bottom:13px;}
+.panel-card.gold-border{border-left:3px solid var(--gold);}
+.panel-card.red-border{border-left:3px solid var(--red);}
+.h-gold{color:var(--gold);}
+.h-red{color:#E05C4F;}
+.lane-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;}
+@media(max-width:480px){.lane-grid{grid-template-columns:repeat(2,1fr);}}
+.lane-btn{background:var(--panel2);border:1px solid var(--gold-dark);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:700;padding:13px 8px;cursor:pointer;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:5px;letter-spacing:1px;text-transform:uppercase;}
+.lane-btn .li{font-size:1.5rem;}
+.lane-btn:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(200,155,60,.08);}
+.lane-btn.selected{border-color:var(--gold);color:var(--gold-light);background:rgba(200,155,60,.14);box-shadow:0 0 12px rgba(200,155,60,.2);}
+.enemy-input-wrap{position:relative;margin-bottom:0;}
+.enemy-input-wrap input{width:100%;background:var(--panel2);border:1px solid rgba(194,59,45,.5);color:var(--gold-light);font-family:'Rajdhani',sans-serif;font-size:1rem;font-weight:600;padding:11px 14px;outline:none;transition:border-color .2s;clip-path:polygon(0 0,calc(100% - 10px) 0,100% 10px,100% 100%,10px 100%,0 calc(100% - 10px));}
+.enemy-input-wrap input:focus{border-color:var(--red);}
+.enemy-input-wrap input::placeholder{color:var(--text);opacity:.55;}
+.enemy-dropdown{display:none;position:absolute;top:calc(100% + 3px);left:0;right:0;background:#0D1117;border:1px solid rgba(194,59,45,.4);border-top:2px solid var(--red);max-height:220px;overflow-y:auto;z-index:200;scrollbar-width:thin;scrollbar-color:var(--red) transparent;}
+.enemy-dropdown.open{display:block;}
+.enemy-dd-item{padding:7px 14px;font-family:'Rajdhani',sans-serif;font-size:.86rem;font-weight:600;color:var(--text);cursor:pointer;display:flex;align-items:center;gap:9px;transition:background .15s,color .15s;}
+.enemy-dd-item:hover,.enemy-dd-item.focused{background:rgba(194,59,45,.1);color:#E05C4F;}
+.enemy-dd-item .dd-role{font-size:.68rem;color:rgba(194,59,45,.45);margin-left:auto;text-transform:uppercase;letter-spacing:1px;}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:12px;}
+.red-btn{background:linear-gradient(135deg,rgba(194,59,45,.6),rgba(194,59,45,.9));border:1px solid var(--red);color:#fff;font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:700;padding:9px 18px;cursor:pointer;letter-spacing:1px;text-transform:uppercase;transition:all .2s;}
+.red-btn:hover{background:var(--red);box-shadow:0 0 14px rgba(194,59,45,.4);}
+.skip-link{font-family:'Rajdhani',sans-serif;font-size:.82rem;color:var(--text);}
+.skip-link a{color:var(--gold);text-decoration:none;}
+.chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:13px;}
+.chip{background:var(--panel2);border:1px solid var(--gold-dark);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:600;padding:6px 13px;cursor:pointer;transition:all .22s;}
+.chip:hover{border-color:var(--gold);color:var(--gold-light);}
+.chip.active{background:rgba(200,155,60,.14);border-color:var(--gold);color:var(--gold-light);}
+.confirm-btn{background:linear-gradient(135deg,var(--gold-dark),var(--gold));border:none;color:var(--bg);font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:700;padding:10px 22px;cursor:pointer;transition:all .3s;letter-spacing:1px;text-transform:uppercase;}
+.confirm-btn:hover{box-shadow:0 0 18px rgba(200,155,60,.35);}
+.sep{height:1px;background:linear-gradient(90deg,transparent,var(--gold-dark),transparent);margin:10px 0;}
+.loading{text-align:center;padding:38px;color:var(--gold);font-family:'Rajdhani',sans-serif;font-size:1.05rem;letter-spacing:2px;}
+.orbs{display:flex;justify-content:center;gap:9px;margin-bottom:14px;}
+.orb{width:11px;height:11px;border-radius:50%;background:var(--gold);animation:pulse 1.4s ease-in-out infinite;}
+.orb:nth-child(2){animation-delay:.2s;}.orb:nth-child(3){animation-delay:.4s;}
+@keyframes pulse{0%,80%,100%{transform:scale(.6);opacity:.4;}40%{transform:scale(1);opacity:1;}}
+.champ-header{display:flex;align-items:center;gap:18px;background:var(--panel);border:1px solid var(--gold-dark);padding:18px;margin-bottom:14px;clip-path:polygon(0 0,calc(100% - 18px) 0,100% 18px,100% 100%,18px 100%,0 calc(100% - 18px));}
+.champ-avatar{width:66px;height:66px;border:2px solid var(--gold);font-size:2.2rem;display:flex;align-items:center;justify-content:center;background:#0A1628;flex-shrink:0;position:relative;}
+.champ-avatar::after{content:'';position:absolute;inset:-4px;border:1px solid rgba(200,155,60,.25);}
+.champ-info h2{font-family:'Cinzel Decorative',serif;font-size:1.3rem;color:var(--gold-light);text-shadow:0 0 18px rgba(200,155,60,.4);}
+.role-tags{display:flex;gap:7px;flex-wrap:wrap;margin-top:5px;}
+.role-tag{font-family:'Rajdhani',sans-serif;font-size:.72rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 9px;border:1px solid;}
+.tag-fighter{border-color:#C23B2D;color:#E05C4F;background:rgba(194,59,45,.1);}
+.tag-mage{border-color:#5B8EE0;color:#7AAAF0;background:rgba(91,142,224,.1);}
+.tag-assassin{border-color:#9B59B6;color:#B67FD0;background:rgba(155,89,182,.1);}
+.tag-support{border-color:#1ABC9C;color:#2EE0BB;background:rgba(26,188,156,.1);}
+.tag-marksman{border-color:#F39C12;color:#F5B942;background:rgba(243,156,18,.1);}
+.tag-tank{border-color:#3498DB;color:#5DB8F5;background:rgba(52,152,219,.1);}
+.tag-default{border-color:var(--gold-dark);color:var(--gold);background:rgba(200,155,60,.1);}
+.bmeta{font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:1px;padding:2px 8px;text-transform:uppercase;}
+.b-ok{background:rgba(30,122,74,.2);color:#3DD68C;border:1px solid #1E7A4A;}
+.b-warn{background:rgba(194,59,45,.2);color:#E05C4F;border:1px solid #C23B2D;}
+.build-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:7px;}
+.bbadge{font-family:'Rajdhani',sans-serif;font-size:.7rem;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 9px;background:rgba(11,196,227,.08);border:1px solid rgba(11,196,227,.25);color:var(--blue);}
+.bbadge.enemy{background:rgba(194,59,45,.1);border-color:rgba(194,59,45,.4);color:#E05C4F;}
+.tier-badge{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;font-family:'Rajdhani',sans-serif;font-size:.88rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:12px;flex-wrap:wrap;}
+.tier-easy{background:rgba(30,122,74,.12);border:1px solid #1E7A4A;color:#3DD68C;}
+.tier-even{background:rgba(200,155,60,.1);border:1px solid var(--gold-dark);color:var(--gold);}
+.tier-hard{background:rgba(194,59,45,.1);border:1px solid var(--red);color:#E05C4F;}
+.tier-counter{background:rgba(155,89,182,.1);border:1px solid #9B59B6;color:#B67FD0;}
+.ext-links{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.ext-link{background:var(--panel2);border:1px solid var(--gold-dark);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.78rem;font-weight:600;padding:5px 13px;text-decoration:none;transition:all .2s;letter-spacing:.5px;}
+.ext-link:hover{border-color:var(--gold);color:var(--gold-light);}
+.action-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.action-btn{background:var(--panel2);border:1px solid var(--gold-dark);color:var(--text-light);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;padding:8px 16px;cursor:pointer;transition:all .2s;letter-spacing:1px;text-transform:uppercase;}
+.action-btn:hover{border-color:var(--gold);color:var(--gold-light);background:rgba(200,155,60,.08);}
+.action-btn.copied{border-color:#1E7A4A;color:#3DD68C;}
+.sections-grid{display:grid;grid-template-columns:1fr 1fr;gap:13px;margin-bottom:13px;}
+@media(max-width:580px){.sections-grid{grid-template-columns:1fr;}}
+.section-card{background:var(--panel);border:1px solid var(--gold-dark);padding:16px;position:relative;overflow:hidden;}
+.section-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:linear-gradient(180deg,var(--gold),transparent);}
+.section-card h3{font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:11px;}
+.rune-item{display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--rune-bg);border-left:2px solid transparent;margin-bottom:3px;}
+.rune-item.keystone{border-color:var(--gold);}
+.rune-item.primary{border-color:rgba(200,155,60,.35);}
+.rune-item.secondary{border-color:rgba(200,155,60,.12);}
+.rune-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.rune-item.keystone .rune-icon{background:rgba(200,155,60,.18);font-size:1.1rem;}
+.rune-item.primary .rune-icon{background:rgba(200,155,60,.08);}
+.rune-item.secondary .rune-icon{background:rgba(200,155,60,.05);}
+.rune-name{color:var(--gold-light);font-family:'Rajdhani',sans-serif;font-size:.86rem;font-weight:600;}
+.rune-why{color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.74rem;display:block;}
+.tree-label{font-family:'Rajdhani',sans-serif;font-size:.7rem;letter-spacing:1.5px;color:var(--gold-dark);text-transform:uppercase;padding:5px 0 2px 9px;}
+.shards-row{font-family:'Rajdhani',sans-serif;font-size:.78rem;color:var(--text);padding:7px 9px 0;}
+.item-row{display:flex;align-items:center;gap:9px;padding:7px 9px;background:var(--rune-bg);margin-bottom:3px;}
+.item-num{font-family:'Cinzel Decorative',serif;font-size:.62rem;color:var(--gold-dark);width:16px;flex-shrink:0;}
+.item-icon{width:26px;height:26px;background:rgba(200,155,60,.08);border:1px solid var(--gold-dark);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.item-name{color:var(--gold-light);font-family:'Rajdhani',sans-serif;font-size:.86rem;font-weight:600;}
+.item-why{color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.74rem;display:block;}
+.starter-row{font-family:'Rajdhani',sans-serif;font-size:.78rem;color:var(--text);padding:0 0 8px 9px;}
+.info-card{background:var(--panel);border:1px solid var(--gold-dark);padding:15px 17px;margin-bottom:11px;}
+.info-card h3{font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;margin-bottom:9px;}
+.info-card p,.info-card li{font-family:'Exo 2',sans-serif;font-size:.85rem;color:var(--text);line-height:1.65;}
+.info-card ul{padding-left:16px;}
+.info-card li{margin-bottom:3px;}
+.gold-top{border-top:2px solid var(--gold);}
+.red-top{border-top:2px solid var(--red);}
+.green-top{border-top:2px solid #1E7A4A;}
+.blue-top{border-top:2px solid var(--blue);}
+.c-gold{color:var(--gold);}
+.c-red{color:#E05C4F;}
+.c-green{color:#3DD68C;}
+.c-blue{color:var(--blue);}
+.pros-cons{display:grid;grid-template-columns:1fr 1fr;gap:11px;margin-bottom:11px;}
+@media(max-width:500px){.pros-cons{grid-template-columns:1fr;}}
+.pros-card,.cons-card{background:var(--panel);padding:13px 15px;border:1px solid var(--gold-dark);}
+.pros-card{border-top:2px solid #1E7A4A;}
+.cons-card{border-top:2px solid var(--red);}
+.pros-card h3{font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#3DD68C;margin-bottom:8px;}
+.cons-card h3{font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:#E05C4F;margin-bottom:8px;}
+.pros-card li,.cons-card li{font-family:'Exo 2',sans-serif;font-size:.82rem;color:var(--text);line-height:1.6;margin-bottom:2px;padding-left:2px;}
+.pros-card ul,.cons-card ul{padding-left:14px;}
+.skills-row{display:flex;gap:7px;align-items:center;flex-wrap:wrap;}
+.skill-chip{background:var(--rune-bg);border:1px solid var(--gold-dark);font-family:'Rajdhani',sans-serif;font-size:.82rem;font-weight:700;color:var(--gold-light);padding:5px 12px;letter-spacing:1px;}
+.skill-arrow{color:var(--gold-dark);font-size:.9rem;}
+.skill-note{font-family:'Exo 2',sans-serif;font-size:.8rem;color:var(--text);margin-top:7px;}
+.fav-btn{background:none;border:none;cursor:pointer;font-size:1.3rem;padding:3px;transition:transform .2s;line-height:1;}
+.fav-btn:hover{transform:scale(1.2);}
+.fav-section{margin-bottom:13px;display:none;}
+.fav-section.visible{display:block;}
+.fav-section h4{font-family:'Rajdhani',sans-serif;font-size:.75rem;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gold-dark);margin-bottom:8px;}
+.fav-list{display:flex;gap:7px;flex-wrap:wrap;}
+.fav-item{background:var(--panel2);border:1px solid var(--gold-dark);color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.8rem;font-weight:600;padding:5px 11px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px;}
+.fav-item:hover{border-color:var(--gold);color:var(--gold-light);}
+.fav-remove{color:var(--red);font-size:.85rem;}
+.error-msg{background:rgba(194,59,45,.1);border:1px solid var(--red);color:#E05C4F;padding:14px 18px;font-family:'Rajdhani',sans-serif;font-size:.95rem;}
+.toast{position:fixed;bottom:22px;right:20px;background:#1E7A4A;color:#fff;font-family:'Rajdhani',sans-serif;font-size:.9rem;font-weight:700;padding:10px 18px;opacity:0;transform:translateY(8px);transition:all .3s;z-index:999;pointer-events:none;}
+.toast.show{opacity:1;transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+<header>
+  <span style="font-size:1.8rem">⚔️</span>
+  <h1>LoL Advisor</h1>
+  <p>Runas · Itens · Matchups · Builds Personalizadas</p>
+</header>
+<div class="divider"><span>◆</span></div>
+
+<div class="fav-section" id="favSection">
+  <h4>⭐ Builds Salvas</h4>
+  <div class="fav-list" id="favList"></div>
+</div>
+
+<p style="font-family:'Rajdhani',sans-serif;font-size:.82rem;color:var(--text);margin-bottom:10px;letter-spacing:1px;text-transform:uppercase;">Populares:</p>
+<div class="suggestions">
+  <button class="sugg-btn" onclick="quickSearch('Yasuo')">⚔️ Yasuo</button>
+  <button class="sugg-btn" onclick="quickSearch('Ahri')">🦊 Ahri</button>
+  <button class="sugg-btn" onclick="quickSearch('Jinx')">💥 Jinx</button>
+  <button class="sugg-btn" onclick="quickSearch('Thresh')">⛓️ Thresh</button>
+  <button class="sugg-btn" onclick="quickSearch('Lee Sin')">👊 Lee Sin</button>
+  <button class="sugg-btn" onclick="quickSearch('Zed')">🌑 Zed</button>
+  <button class="sugg-btn" onclick="quickSearch('Garen')">🛡️ Garen</button>
+  <button class="sugg-btn" onclick="quickSearch('Kai\'Sa')">👾 Kai'Sa</button>
+  <button class="sugg-btn" onclick="quickSearch('Zilean')">⏳ Zilean</button>
+  <button class="sugg-btn" onclick="quickSearch('Blitzcrank')">🤖 Blitzcrank</button>
+</div>
+
+<div class="search-area">
+  <div class="search-wrapper">
+    <input type="text" id="champInput" placeholder="Digite ou clique para buscar campeão..." autocomplete="off"
+      onkeydown="handleInputKey(event)" oninput="filterDropdown()" onfocus="openDropdown()"/>
+    <div class="champ-dropdown" id="champDropdown"><div id="ddList"></div></div>
+  </div>
+  <button class="search-btn" onclick="doSearch()">Analisar</button>
+</div>
+
+<div class="panel-card gold-border" id="laneSection">
+  <h3 class="h-gold">🗺️ Qual rota você vai jogar?</h3>
+  <div class="lane-grid">
+    <button class="lane-btn" data-lane="Topo" onclick="selectLane(this)"><span class="li">🛡️</span>Topo</button>
+    <button class="lane-btn" data-lane="Selva" onclick="selectLane(this)"><span class="li">🌿</span>Selva</button>
+    <button class="lane-btn" data-lane="Meio" onclick="selectLane(this)"><span class="li">⚡</span>Meio</button>
+    <button class="lane-btn" data-lane="Atirador" onclick="selectLane(this)"><span class="li">🏹</span>Atirador</button>
+    <button class="lane-btn" data-lane="Suporte" onclick="selectLane(this)"><span class="li">💛</span>Suporte</button>
+    <button class="lane-btn" data-lane="Qualquer" onclick="selectLane(this)"><span class="li">🌀</span>Qualquer</button>
+  </div>
+</div>
+
+<div class="panel-card red-border" id="enemySection">
+  <h3 class="h-red">⚔️ Quem é seu inimigo na lane?</h3>
+  <p style="font-family:'Exo 2',sans-serif;font-size:.82rem;color:var(--text);margin-bottom:11px;">A build será otimizada para o maior winrate contra ele.</p>
+  <div class="enemy-input-wrap">
+    <input type="text" id="enemyInput" placeholder="Buscar inimigo..." autocomplete="off"
+      oninput="filterEnemyDropdown()" onfocus="openEnemyDropdown()" onkeydown="handleEnemyKey(event)"/>
+    <div class="enemy-dropdown" id="enemyDropdown"><div id="enemyDdList"></div></div>
+  </div>
+  <div class="row-btns">
+    <button class="red-btn" onclick="confirmEnemy()">⚔️ Confirmar</button>
+    <span class="skip-link">(ou <a href="#" onclick="skipEnemy();return false;">pular</a>)</span>
+  </div>
+</div>
+
+<div class="panel-card gold-border" id="styleSection">
+  <h3 class="h-gold">⚡ Estilo de Build</h3>
+  <p style="font-family:'Exo 2',sans-serif;font-size:.82rem;color:var(--text);margin-bottom:11px;">Foco personalizado? Escolha (opcional) — mesmo fora do meta.</p>
+  <div class="chips">
+    <div class="chip" data-val="dano_magico" onclick="toggleChip(this)">🔮 Dano Mágico</div>
+    <div class="chip" data-val="dano_fisico" onclick="toggleChip(this)">⚔️ Dano Físico</div>
+    <div class="chip" data-val="critico" onclick="toggleChip(this)">💥 Crítico</div>
+    <div class="chip" data-val="lentidao" onclick="toggleChip(this)">🧊 Lentidão/CC</div>
+    <div class="chip" data-val="cooldown" onclick="toggleChip(this)">⏱️ Cooldown</div>
+    <div class="chip" data-val="vida" onclick="toggleChip(this)">❤️ Muita Vida</div>
+    <div class="chip" data-val="defesa" onclick="toggleChip(this)">🛡️ Tanque</div>
+    <div class="chip" data-val="velocidade" onclick="toggleChip(this)">💨 Velocidade</div>
+    <div class="chip" data-val="on_hit" onclick="toggleChip(this)">⚡ On-Hit</div>
+    <div class="chip" data-val="sustain" onclick="toggleChip(this)">🩸 Sustain</div>
+    <div class="chip" data-val="lethality" onclick="toggleChip(this)">🗡️ Letalidade</div>
+    <div class="chip" data-val="hibrido" onclick="toggleChip(this)">🌀 Híbrido</div>
+  </div>
+  <div class="sep"></div>
+  <div style="margin-top:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+    <button class="confirm-btn" onclick="confirmStyle()">✦ Gerar Build</button>
+    <span class="skip-link">(ou <a href="#" onclick="confirmStyle(true);return false;">pular</a> para meta padrão)</span>
+  </div>
+</div>
+
+<div id="output"></div>
+
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+let currentChamp='',selectedLane='',selectedEnemy='',selectedStyles=[];
+let ddFocusIdx=-1,enemyFocusIdx=-1,lastResult=null;
+
+const CHAMPIONS=[
+  {n:"Aatrox",e:"⚔️",r:"Fighter"},{n:"Ahri",e:"🦊",r:"Mage"},{n:"Akali",e:"🌙",r:"Assassin"},
+  {n:"Akshan",e:"🪃",r:"Marksman"},{n:"Alistar",e:"🐂",r:"Tank"},{n:"Amumu",e:"😢",r:"Tank"},
+  {n:"Anivia",e:"🐦",r:"Mage"},{n:"Annie",e:"🐻",r:"Mage"},{n:"Aphelios",e:"🌙",r:"Marksman"},
+  {n:"Ashe",e:"🏹",r:"Marksman"},{n:"Aurelion Sol",e:"🌟",r:"Mage"},{n:"Aurora",e:"🌌",r:"Mage"},
+  {n:"Azir",e:"👑",r:"Mage"},{n:"Bard",e:"🎵",r:"Support"},{n:"Bel'Veth",e:"👾",r:"Fighter"},
+  {n:"Blitzcrank",e:"🤖",r:"Tank"},{n:"Brand",e:"🔥",r:"Mage"},{n:"Braum",e:"🛡️",r:"Support"},
+  {n:"Briar",e:"🩸",r:"Fighter"},{n:"Caitlyn",e:"🎩",r:"Marksman"},{n:"Camille",e:"⚙️",r:"Fighter"},
+  {n:"Cassiopeia",e:"🐍",r:"Mage"},{n:"Cho'Gath",e:"👹",r:"Tank"},{n:"Corki",e:"✈️",r:"Marksman"},
+  {n:"Darius",e:"🪓",r:"Fighter"},{n:"Diana",e:"🌙",r:"Assassin"},{n:"Dr. Mundo",e:"💪",r:"Tank"},
+  {n:"Draven",e:"🪃",r:"Marksman"},{n:"Ekko",e:"⏱️",r:"Assassin"},{n:"Elise",e:"🕷️",r:"Mage"},
+  {n:"Evelynn",e:"💜",r:"Assassin"},{n:"Ezreal",e:"🔮",r:"Marksman"},{n:"Fiddlesticks",e:"🎃",r:"Mage"},
+  {n:"Fiora",e:"🤺",r:"Fighter"},{n:"Fizz",e:"🐟",r:"Assassin"},{n:"Galio",e:"🗿",r:"Tank"},
+  {n:"Gangplank",e:"🏴‍☠️",r:"Fighter"},{n:"Garen",e:"🛡️",r:"Fighter"},{n:"Gnar",e:"🦕",r:"Fighter"},
+  {n:"Gragas",e:"🍺",r:"Fighter"},{n:"Graves",e:"🔫",r:"Marksman"},{n:"Gwen",e:"✂️",r:"Fighter"},
+  {n:"Hecarim",e:"🐴",r:"Fighter"},{n:"Heimerdinger",e:"🔬",r:"Mage"},{n:"Hwei",e:"🎨",r:"Mage"},
+  {n:"Illaoi",e:"🐙",r:"Fighter"},{n:"Irelia",e:"⚔️",r:"Fighter"},{n:"Ivern",e:"🌿",r:"Support"},
+  {n:"Janna",e:"🌪️",r:"Support"},{n:"Jarvan IV",e:"👑",r:"Fighter"},{n:"Jax",e:"🏺",r:"Fighter"},
+  {n:"Jayce",e:"⚡",r:"Fighter"},{n:"Jhin",e:"🎭",r:"Marksman"},{n:"Jinx",e:"💥",r:"Marksman"},
+  {n:"K'Sante",e:"🦁",r:"Tank"},{n:"Kai'Sa",e:"👾",r:"Marksman"},{n:"Kalista",e:"👻",r:"Marksman"},
+  {n:"Karma",e:"☯️",r:"Support"},{n:"Karthus",e:"💀",r:"Mage"},{n:"Kassadin",e:"🌀",r:"Assassin"},
+  {n:"Katarina",e:"🗡️",r:"Assassin"},{n:"Kayle",e:"👼",r:"Fighter"},{n:"Kayn",e:"⚔️",r:"Assassin"},
+  {n:"Kennen",e:"⚡",r:"Mage"},{n:"Kha'Zix",e:"🦗",r:"Assassin"},{n:"Kindred",e:"🐺",r:"Marksman"},
+  {n:"Kled",e:"🦎",r:"Fighter"},{n:"Kog'Maw",e:"👅",r:"Marksman"},{n:"LeBlanc",e:"🎭",r:"Assassin"},
+  {n:"Lee Sin",e:"👊",r:"Fighter"},{n:"Leona",e:"☀️",r:"Tank"},{n:"Lillia",e:"🦌",r:"Fighter"},
+  {n:"Lissandra",e:"🧊",r:"Mage"},{n:"Lucian",e:"🔫",r:"Marksman"},{n:"Lulu",e:"🧚",r:"Support"},
+  {n:"Lux",e:"✨",r:"Mage"},{n:"Malphite",e:"🪨",r:"Tank"},{n:"Malzahar",e:"🌑",r:"Mage"},
+  {n:"Maokai",e:"🌳",r:"Tank"},{n:"Master Yi",e:"🥷",r:"Assassin"},{n:"Milio",e:"🔥",r:"Support"},
+  {n:"Miss Fortune",e:"🔫",r:"Marksman"},{n:"Mordekaiser",e:"💀",r:"Fighter"},{n:"Morgana",e:"🖤",r:"Support"},
+  {n:"Naafiri",e:"🐕",r:"Assassin"},{n:"Nami",e:"🧜",r:"Support"},{n:"Nasus",e:"🐶",r:"Fighter"},
+  {n:"Nautilus",e:"⚓",r:"Tank"},{n:"Neeko",e:"🦎",r:"Mage"},{n:"Nidalee",e:"🐆",r:"Assassin"},
+  {n:"Nilah",e:"🌊",r:"Fighter"},{n:"Nocturne",e:"🌑",r:"Assassin"},{n:"Nunu & Willump",e:"❄️",r:"Tank"},
+  {n:"Olaf",e:"🪓",r:"Fighter"},{n:"Orianna",e:"⚙️",r:"Mage"},{n:"Ornn",e:"🔨",r:"Tank"},
+  {n:"Pantheon",e:"🏛️",r:"Fighter"},{n:"Poppy",e:"🔨",r:"Tank"},{n:"Pyke",e:"🎣",r:"Assassin"},
+  {n:"Qiyana",e:"🌿",r:"Assassin"},{n:"Quinn",e:"🦅",r:"Marksman"},{n:"Rakan",e:"🕊️",r:"Support"},
+  {n:"Rammus",e:"🐢",r:"Tank"},{n:"Rek'Sai",e:"🦷",r:"Fighter"},{n:"Rell",e:"⚙️",r:"Tank"},
+  {n:"Renata Glasc",e:"💼",r:"Support"},{n:"Renekton",e:"🐊",r:"Fighter"},{n:"Rengar",e:"🦁",r:"Assassin"},
+  {n:"Riven",e:"⚔️",r:"Fighter"},{n:"Rumble",e:"🤖",r:"Fighter"},{n:"Ryze",e:"🔷",r:"Mage"},
+  {n:"Samira",e:"🌹",r:"Marksman"},{n:"Sejuani",e:"🐗",r:"Tank"},{n:"Senna",e:"⛓️",r:"Marksman"},
+  {n:"Seraphine",e:"🎤",r:"Support"},{n:"Sett",e:"👊",r:"Fighter"},{n:"Shaco",e:"🃏",r:"Assassin"},
+  {n:"Shen",e:"⚔️",r:"Tank"},{n:"Shyvana",e:"🐉",r:"Fighter"},{n:"Singed",e:"⚗️",r:"Tank"},
+  {n:"Sion",e:"💀",r:"Tank"},{n:"Sivir",e:"🪃",r:"Marksman"},{n:"Skarner",e:"🦂",r:"Tank"},
+  {n:"Smolder",e:"🔥",r:"Marksman"},{n:"Sona",e:"🎶",r:"Support"},{n:"Soraka",e:"⭐",r:"Support"},
+  {n:"Swain",e:"🦅",r:"Mage"},{n:"Sylas",e:"⛓️",r:"Mage"},{n:"Syndra",e:"🔮",r:"Mage"},
+  {n:"Tahm Kench",e:"🐸",r:"Tank"},{n:"Taliyah",e:"🪨",r:"Mage"},{n:"Talon",e:"🗡️",r:"Assassin"},
+  {n:"Taric",e:"💎",r:"Support"},{n:"Teemo",e:"🍄",r:"Marksman"},{n:"Thresh",e:"⛓️",r:"Support"},
+  {n:"Tristana",e:"💣",r:"Marksman"},{n:"Trundle",e:"🏔️",r:"Fighter"},{n:"Tryndamere",e:"⚔️",r:"Fighter"},
+  {n:"Twisted Fate",e:"🃏",r:"Mage"},{n:"Twitch",e:"🐀",r:"Marksman"},{n:"Udyr",e:"🐻",r:"Fighter"},
+  {n:"Urgot",e:"🦀",r:"Fighter"},{n:"Varus",e:"🏹",r:"Marksman"},{n:"Vayne",e:"🏹",r:"Marksman"},
+  {n:"Veigar",e:"🎩",r:"Mage"},{n:"Vel'Koz",e:"👁️",r:"Mage"},{n:"Vex",e:"😒",r:"Mage"},
+  {n:"Vi",e:"👊",r:"Fighter"},{n:"Viego",e:"👑",r:"Assassin"},{n:"Viktor",e:"🤖",r:"Mage"},
+  {n:"Vladimir",e:"🩸",r:"Mage"},{n:"Volibear",e:"⚡",r:"Fighter"},{n:"Warwick",e:"🐺",r:"Fighter"},
+  {n:"Wukong",e:"🐒",r:"Fighter"},{n:"Xayah",e:"🪶",r:"Marksman"},{n:"Xerath",e:"⚡",r:"Mage"},
+  {n:"Xin Zhao",e:"🏹",r:"Fighter"},{n:"Yasuo",e:"⚔️",r:"Fighter"},{n:"Yone",e:"⚔️",r:"Assassin"},
+  {n:"Yorick",e:"⚰️",r:"Fighter"},{n:"Yuumi",e:"🐱",r:"Support"},{n:"Zac",e:"💚",r:"Tank"},
+  {n:"Zed",e:"🌑",r:"Assassin"},{n:"Zeri",e:"⚡",r:"Marksman"},{n:"Ziggs",e:"💣",r:"Mage"},
+  {n:"Zilean",e:"⏳",r:"Support"},{n:"Zoe",e:"💫",r:"Mage"},{n:"Zyra",e:"🌺",r:"Mage"}
+];
+
+// FAVORITES
+function loadFavs(){try{return JSON.parse(localStorage.getItem('lol_favs')||'[]');}catch{return[];}}
+function saveFavs(f){try{localStorage.setItem('lol_favs',JSON.stringify(f));}catch{}}
+function renderFavs(){
+  const favs=loadFavs(),sec=document.getElementById('favSection'),list=document.getElementById('favList');
+  if(!favs.length){sec.classList.remove('visible');return;}
+  sec.classList.add('visible');
+  list.innerHTML=favs.map((f,i)=>`<div class="fav-item" onclick="loadFav(${i})"><span>${f.emoji}</span><span>${f.champion}</span><span style="color:var(--text);font-size:.7rem;">${f.lane||''}</span><span class="fav-remove" onclick="removeFav(event,${i})">✕</span></div>`).join('');
+}
+function addFav(){
+  if(!lastResult)return;
+  const favs=loadFavs(),key=lastResult.champion+(selectedLane||'')+(selectedEnemy||'');
+  if(favs.find(f=>f._key===key)){showToast('Já salvo!');return;}
+  favs.unshift({...lastResult,lane:selectedLane,enemy:selectedEnemy,styles:selectedStyles,_key:key});
+  if(favs.length>10)favs.pop();
+  saveFavs(favs);renderFavs();showToast('⭐ Build salva!');
+}
+function removeFav(e,i){e.stopPropagation();const favs=loadFavs();favs.splice(i,1);saveFavs(favs);renderFavs();}
+function loadFav(i){
+  const f=loadFavs()[i];if(!f)return;
+  currentChamp=f.champion;selectedLane=f.lane||'';selectedEnemy=f.enemy||'';selectedStyles=f.styles||[];
+  document.getElementById('champInput').value=f.champion;
+  lastResult=f;renderResult(f);
+}
+
+// TOAST
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200);}
+
+// DROPDOWN MAIN
+function buildDDList(filter){
+  const q=(filter||'').toLowerCase();
+  const filtered=q?CHAMPIONS.filter(c=>c.n.toLowerCase().includes(q)):CHAMPIONS;
+  ddFocusIdx=-1;
+  document.getElementById('ddList').innerHTML=filtered.map(c=>`<div class="dd-item" data-name="${c.n}"><span>${c.e}</span><span>${c.n}</span><span class="dd-role">${c.r}</span></div>`).join('');
+}
+function openDropdown(){buildDDList(document.getElementById('champInput').value);document.getElementById('champDropdown').classList.add('open');}
+function filterDropdown(){buildDDList(document.getElementById('champInput').value);document.getElementById('champDropdown').classList.add('open');}
+function selectChamp(name){document.getElementById('champInput').value=name;document.getElementById('champDropdown').classList.remove('open');doSearch();}
+function handleInputKey(e){
+  const items=document.querySelectorAll('.dd-item');
+  if(e.key==='ArrowDown'){e.preventDefault();ddFocusIdx=Math.min(ddFocusIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('focused',i===ddFocusIdx));items[ddFocusIdx]?.scrollIntoView({block:'nearest'});}
+  else if(e.key==='ArrowUp'){e.preventDefault();ddFocusIdx=Math.max(ddFocusIdx-1,0);items.forEach((el,i)=>el.classList.toggle('focused',i===ddFocusIdx));items[ddFocusIdx]?.scrollIntoView({block:'nearest'});}
+  else if(e.key==='Enter'){if(ddFocusIdx>=0&&items[ddFocusIdx]){selectChamp(items[ddFocusIdx].dataset.name);return;}doSearch();}
+  else if(e.key==='Escape'){document.getElementById('champDropdown').classList.remove('open');}
+}
+
+// DROPDOWN ENEMY
+function buildEnemyList(filter){
+  const q=(filter||'').toLowerCase();
+  const filtered=q?CHAMPIONS.filter(c=>c.n.toLowerCase().includes(q)):CHAMPIONS;
+  enemyFocusIdx=-1;
+  document.getElementById('enemyDdList').innerHTML=filtered.map(c=>`<div class="enemy-dd-item" data-name="${c.n}"><span>${c.e}</span><span>${c.n}</span><span class="dd-role">${c.r}</span></div>`).join('');
+}
+function openEnemyDropdown(){buildEnemyList(document.getElementById('enemyInput').value);document.getElementById('enemyDropdown').classList.add('open');}
+function filterEnemyDropdown(){buildEnemyList(document.getElementById('enemyInput').value);document.getElementById('enemyDropdown').classList.add('open');}
+function pickEnemy(name){document.getElementById('enemyInput').value=name;selectedEnemy=name;document.getElementById('enemyDropdown').classList.remove('open');}
+function handleEnemyKey(e){
+  const items=document.querySelectorAll('.enemy-dd-item');
+  if(e.key==='ArrowDown'){e.preventDefault();enemyFocusIdx=Math.min(enemyFocusIdx+1,items.length-1);items.forEach((el,i)=>el.classList.toggle('focused',i===enemyFocusIdx));items[enemyFocusIdx]?.scrollIntoView({block:'nearest'});}
+  else if(e.key==='ArrowUp'){e.preventDefault();enemyFocusIdx=Math.max(enemyFocusIdx-1,0);items.forEach((el,i)=>el.classList.toggle('focused',i===enemyFocusIdx));items[enemyFocusIdx]?.scrollIntoView({block:'nearest'});}
+  else if(e.key==='Enter'){if(enemyFocusIdx>=0&&items[enemyFocusIdx]){pickEnemy(items[enemyFocusIdx].dataset.name);return;}confirmEnemy();}
+  else if(e.key==='Escape'){document.getElementById('enemyDropdown').classList.remove('open');}
+}
+function confirmEnemy(){const t=document.getElementById('enemyInput').value.trim();if(t)selectedEnemy=t;document.getElementById('enemyDropdown').classList.remove('open');showStyleSection();}
+function skipEnemy(){selectedEnemy='';showStyleSection();}
+function showStyleSection(){document.getElementById('enemySection').classList.remove('visible');document.getElementById('styleSection').classList.add('visible');document.getElementById('styleSection').scrollIntoView({behavior:'smooth',block:'center'});}
+
+// EVENT DELEGATION — fixes apostrophe bug (Kai'Sa, K'Sante, etc)
+document.addEventListener('click',function(e){
+  const di=e.target.closest('.dd-item');if(di){selectChamp(di.dataset.name);return;}
+  const ei=e.target.closest('.enemy-dd-item');if(ei){pickEnemy(ei.dataset.name);return;}
+  if(!e.target.closest('.search-wrapper'))document.getElementById('champDropdown').classList.remove('open');
+  if(!e.target.closest('.enemy-input-wrap'))document.getElementById('enemyDropdown').classList.remove('open');
+});
+
+// FLOW
+function quickSearch(name){document.getElementById('champInput').value=name;doSearch();}
+function doSearch(){
+  const input=document.getElementById('champInput').value.trim();if(!input)return;
+  currentChamp=input;selectedLane='';selectedEnemy='';selectedStyles=[];
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.lane-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('enemyInput').value='';
+  ['laneSection','enemySection','styleSection'].forEach(id=>document.getElementById(id).classList.remove('visible'));
+  const out=document.getElementById('output');out.classList.remove('visible');out.innerHTML='';
+  document.getElementById('laneSection').classList.add('visible');
+  document.getElementById('laneSection').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function selectLane(el){
+  document.querySelectorAll('.lane-btn').forEach(b=>b.classList.remove('selected'));
+  el.classList.add('selected');selectedLane=el.dataset.lane;
+  setTimeout(()=>{
+    document.getElementById('laneSection').classList.remove('visible');
+    document.getElementById('enemySection').classList.add('visible');
+    document.getElementById('enemySection').scrollIntoView({behavior:'smooth',block:'center'});
+    document.getElementById('enemyInput').focus();
+  },300);
+}
+function toggleChip(el){
+  el.classList.toggle('active');const v=el.dataset.val;
+  if(el.classList.contains('active'))selectedStyles.push(v);
+  else selectedStyles=selectedStyles.filter(s=>s!==v);
+}
+function confirmStyle(skip=false){
+  if(skip)selectedStyles=[];
+  document.getElementById('styleSection').classList.remove('visible');
+  generateAdvice();
+}
+
+// COPY BUILD
+function copyBuild(){
+  if(!lastResult)return;
+  const d=lastResult;
+  const lines=[
+    `⚔️ ${d.champion} — LoL Advisor`,
+    selectedLane?`🗺️ Rota: ${selectedLane}`:'',
+    selectedEnemy?`⚔️ vs ${selectedEnemy}`:'',
+    ``,
+    `🔮 Runas: ${d.primary_rune_tree}`,
+    `  Keystone: ${d.keystone?.name}`,
+    ...(d.primary_runes||[]).map(r=>`  • ${r.name}`),
+    `  Secundárias (${d.secondary_tree}): ${(d.secondary_runes||[]).map(r=>r.name).join(', ')}`,
+    `  Fragmentos: ${(d.shards||[]).join(' · ')}`,
+    ``,
+    `🏺 Itens:`,
+    ...(d.items||[]).map((it,i)=>`  ${i+1}. ${it.name}`),
+    d.starter_items?`  Inicial: ${d.starter_items}`:'',
+    ``,
+    d.skill_order?`🎮 Habilidades: ${d.skill_order}`:'',
+    ``,
+    d.matchup_tip&&selectedEnemy?`⚔️ Matchup vs ${selectedEnemy}: ${d.matchup_tip}`:'',
+    d.tips?`💡 ${d.tips}`:'',
+    ``,`— gerado por LoL Advisor`
+  ].filter(l=>l!==null&&l!==undefined);
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{
+    showToast('📋 Build copiada!');
+    const btn=document.getElementById('copyBtn');
+    if(btn){btn.textContent='✓ Copiado!';btn.classList.add('copied');setTimeout(()=>{btn.textContent='📋 Copiar Build';btn.classList.remove('copied');},2000);}
+  }).catch(()=>showToast('Erro ao copiar'));
+}
+
+// GENERATE
+async function generateAdvice(){
+  const out=document.getElementById('output');
+  out.classList.add('visible');
+  out.innerHTML=`<div class="loading"><div class="orbs"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>Consultando os oráculos da Rift...</div>`;
+  const laneText=selectedLane&&selectedLane!=='Qualquer'?`Rota: ${selectedLane}.`:'';
+  const enemyText=selectedEnemy?`Inimigo na lane: ${selectedEnemy}. Adapte a build para o maior winrate neste matchup — resistências, items que counterem pontos fortes dele, runas que ajudem no early.`:'';
+  const styleText=selectedStyles.length>0?`Estilo extra desejado: ${selectedStyles.join(', ')}. Adapte mesmo fora do meta e avise.`:`Use a build de maior winrate para esta rota e matchup.`;
+  const prompt=`Você é um especialista em League of Legends. Campeão: ${currentChamp}. ${laneText} ${enemyText} ${styleText}
+
+Retorne APENAS JSON puro sem markdown:
+{"champion":"nome oficial","emoji":"emoji","roles":["role"],"meta_standard":true,"style_warning":"aviso ou null","primary_rune_tree":"nome","keystone":{"name":"nome","emoji":"e","why":"motivo"},"primary_runes":[{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""}],"secondary_tree":"nome","secondary_runes":[{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""}],"shards":["","",""],"items":[{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""},{"name":"","emoji":"e","why":""}],"starter_items":"texto","skill_order":"ex: Q>E>W","skill_note":"dica evolução","matchup_tier":"Easy|Even|Hard|Counter","pros":["forte 1","forte 2","forte 3"],"cons":["fraco 1","fraco 2","fraco 3"],"tips":"dica gameplay","matchup_tip":"dica matchup ou null"}
+
+Se campeão não existir: {"error":"Campeão não encontrado"}`;
+  try{
+    const resp=await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json","x-api-key":"{{ANTHROPIC_API_KEY}}","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-sonnet-4-5",max_tokens:4000,messages:[{role:"user",content:prompt}]})
+    });
+    const data=await resp.json();
+    if(!resp.ok||data.error)throw new Error('API: '+(data.error?.message||JSON.stringify(data).slice(0,200)));
+    const raw=data.content.map(i=>i.text||'').join('').trim();
+    let json;
+    try{const m=raw.match(/\{[\s\S]*\}/);if(!m)throw 1;json=JSON.parse(m[0]);}
+    catch{throw new Error('JSON inválido: '+raw.slice(0,150));}
+    if(json.error){out.innerHTML=`<div class="error-msg">⚠️ ${json.error}</div>`;return;}
+    lastResult=json;renderResult(json);
+  }catch(err){
+    out.innerHTML=`<div class="error-msg">⚠️ Erro ao consultar o oráculo. (${err.message})</div>`;
+  }
+}
+
+// RENDER
+function roleClass(r){return({Fighter:'tag-fighter',Lutador:'tag-fighter',Mage:'tag-mage',Mago:'tag-mage',Assassin:'tag-assassin',Assassino:'tag-assassin',Support:'tag-support',Suporte:'tag-support',Marksman:'tag-marksman',Atirador:'tag-marksman',Tank:'tag-tank'})[r]||'tag-default';}
+function styleLabel(v){return({dano_magico:'🔮 Mágico',dano_fisico:'⚔️ Físico',critico:'💥 Crítico',lentidao:'🧊 CC',cooldown:'⏱️ CDR',vida:'❤️ Vida',defesa:'🛡️ Tanque',velocidade:'💨 Vel.',on_hit:'⚡ On-Hit',sustain:'🩸 Sustain',lethality:'🗡️ Letal.',hibrido:'🌀 Híbrido'})[v]||v;}
+function tierInfo(t){return({Easy:{cls:'tier-easy',label:'✅ Favorável'},Even:{cls:'tier-even',label:'⚖️ Equilibrado'},Hard:{cls:'tier-hard',label:'⚠️ Difícil'},Counter:{cls:'tier-counter',label:'🚫 Hard Counter'}})[t]||{cls:'tier-even',label:'⚖️ Equilibrado'};}
+
+function renderResult(d){
+  const out=document.getElementById('output');
+  const roleTags=(d.roles||[]).map(r=>`<span class="role-tag ${roleClass(r)}">${r}</span>`).join('');
+  const buildBadges=[
+    selectedLane?`<span class="bbadge">🗺️ ${selectedLane}</span>`:'',
+    selectedEnemy?`<span class="bbadge enemy">⚔️ vs ${selectedEnemy}</span>`:'',
+    ...selectedStyles.map(s=>`<span class="bbadge">${styleLabel(s)}</span>`)
+  ].filter(Boolean).join('');
+  const warn=d.style_warning?`<div style="margin-bottom:11px;padding:9px 13px;background:rgba(194,59,45,.07);border-left:3px solid var(--red);font-family:'Rajdhani',sans-serif;font-size:.85rem;color:#E05C4F;">⚠️ ${d.style_warning}</div>`:'';
+  const tier=d.matchup_tier&&selectedEnemy?tierInfo(d.matchup_tier):{};
+  const tierHtml=tier.cls?`<div class="tier-badge ${tier.cls}">${tier.label} <span style="font-weight:400;font-size:.82rem;text-transform:none;">vs ${selectedEnemy}</span></div>`:'';
+  const runesHtml=`
+    <div class="rune-item keystone"><div class="rune-icon">${d.keystone?.emoji}</div><div><div class="rune-name">${d.keystone?.name}</div><span class="rune-why">Keystone · ${d.keystone?.why}</span></div></div>
+    ${(d.primary_runes||[]).map(r=>`<div class="rune-item primary"><div class="rune-icon">${r.emoji}</div><div><div class="rune-name">${r.name}</div><span class="rune-why">${r.why}</span></div></div>`).join('')}
+    <div class="tree-label">Secundárias · ${d.secondary_tree}</div>
+    ${(d.secondary_runes||[]).map(r=>`<div class="rune-item secondary"><div class="rune-icon">${r.emoji}</div><div><div class="rune-name">${r.name}</div><span class="rune-why">${r.why}</span></div></div>`).join('')}
+    ${d.shards?.length?`<div class="shards-row"><span style="color:var(--gold-dark)">Fragmentos: </span>${d.shards.join(' · ')}</div>`:''}`;
+  const itemsHtml=`
+    ${d.starter_items?`<div class="starter-row">🏁 <span style="color:var(--gold-dark)">Inicial:</span> ${d.starter_items}</div>`:''}
+    ${(d.items||[]).map((it,i)=>`<div class="item-row"><div class="item-num">${String(i+1).padStart(2,'0')}</div><div class="item-icon">${it.emoji}</div><div><div class="item-name">${it.name}</div><span class="item-why">${it.why}</span></div></div>`).join('')}`;
+  const skillHtml=d.skill_order?`<div class="skills-row">${d.skill_order.split(/[>→]/).map(s=>`<span class="skill-chip">${s.trim()}</span>`).join('<span class="skill-arrow">›</span>')}</div>${d.skill_note?`<div class="skill-note">${d.skill_note}</div>`:''}`:'';
+  const prosHtml=(d.pros||[]).map(p=>`<li>${p}</li>`).join('');
+  const consHtml=(d.cons||[]).map(c=>`<li>${c}</li>`).join('');
+  const slug=d.champion.replace(/[' ]/g,s=>s==="'"?'':'-').toLowerCase();
+
+  out.innerHTML=`
+    <div class="champ-header">
+      <div class="champ-avatar">${d.emoji}</div>
+      <div class="champ-info">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <h2>${d.champion}</h2>
+          <button class="fav-btn" onclick="addFav()" title="Salvar build">⭐</button>
+        </div>
+        <div class="role-tags">${roleTags}<span class="bmeta ${d.meta_standard!==false?'b-ok':'b-warn'}">${d.meta_standard!==false?'Meta':'Fora do meta'}</span></div>
+        ${buildBadges?`<div class="build-badges">${buildBadges}</div>`:''}
+      </div>
+    </div>
+    ${warn}${tierHtml}
+    <div class="ext-links">
+      <a class="ext-link" href="https://www.op.gg/champions/${slug}" target="_blank">🔗 OP.GG</a>
+      <a class="ext-link" href="https://u.gg/lol/champions/${slug}/build" target="_blank">🔗 U.GG</a>
+      <a class="ext-link" href="https://www.mobafire.com/league-of-legends/${slug}-guide" target="_blank">🔗 Mobafire</a>
+    </div>
+    <div class="action-bar">
+      <button class="action-btn" id="copyBtn" onclick="copyBuild()">📋 Copiar Build</button>
+      <button class="action-btn" onclick="doSearch()">↩ Nova Consulta</button>
+    </div>
+    <div class="sections-grid">
+      <div class="section-card"><h3>🔮 Runas · ${d.primary_rune_tree}</h3>${runesHtml}</div>
+      <div class="section-card"><h3>⚔️ Itens</h3>${itemsHtml}</div>
+    </div>
+    ${skillHtml?`<div class="info-card gold-top"><h3 class="c-gold">🎮 Ordem de Habilidades</h3>${skillHtml}</div>`:''}
+    ${prosHtml||consHtml?`<div class="pros-cons"><div class="pros-card"><h3>✅ Pontos Fortes</h3><ul>${prosHtml}</ul></div><div class="cons-card"><h3>❌ Pontos Fracos</h3><ul>${consHtml}</ul></div></div>`:''}
+    ${d.matchup_tip&&selectedEnemy?`<div class="info-card red-top"><h3 class="c-red">⚔️ Dica de Matchup vs ${selectedEnemy}</h3><p>${d.matchup_tip}</p></div>`:''}
+    ${d.tips?`<div class="info-card gold-top"><h3 class="c-gold">💡 Dicas de Gameplay</h3><p>${d.tips}</p></div>`:''}
+  `;
+  renderFavs();
+}
+
+renderFavs();
+</script>
+</body>
+</html>
