@@ -245,6 +245,7 @@ header p{color:var(--text);font-family:'Rajdhani',sans-serif;font-size:.95rem;ma
     <div class="chip" data-val="sustain" onclick="toggleChip(this)">🩸 Sustain</div>
     <div class="chip" data-val="lethality" onclick="toggleChip(this)">🗡️ Letalidade</div>
     <div class="chip" data-val="hibrido" onclick="toggleChip(this)">🌀 Híbrido</div>
+    <div class="chip" data-val="escudo" onclick="toggleChip(this)">🔵 Escudo/Shield</div>
   </div>
   <div class="sep"></div>
   <div style="margin-top:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
@@ -469,7 +470,7 @@ async function generateAdvice(){
   out.innerHTML=`<div class="loading"><div class="orbs"><div class="orb"></div><div class="orb"></div><div class="orb"></div></div>Consultando os oráculos da Rift...</div>`;
   const laneText=selectedLane&&selectedLane!=='Qualquer'?`Rota: ${selectedLane}.`:'';
   const enemyText=selectedEnemy?`Inimigo na lane: ${selectedEnemy}. Adapte a build para o maior winrate neste matchup — resistências, items que counterem pontos fortes dele, runas que ajudem no early.`:'';
-  const styleText=selectedStyles.length>0?`Estilo extra desejado: ${selectedStyles.join(', ')}. Adapte mesmo fora do meta e avise.`:`Use a build de maior winrate para esta rota e matchup.`;
+  const styleText=selectedStyles.length>0?`Estilo extra desejado: ${selectedStyles.join(', ')}. Se incluir escudo, priorize itens como Ardent Censer, Moonstone Renewer, Shurelya's, Shields of the Ancients e runas como Font of Life e Aery. Adapte mesmo fora do meta e avise.`:`Use a build de maior winrate para esta rota e matchup.`;
   const prompt=`Você é um especialista em League of Legends. Campeão: ${currentChamp}. ${laneText} ${enemyText} ${styleText}
 
 Retorne APENAS JSON puro sem markdown:
@@ -497,7 +498,7 @@ Se campeão não existir: {"error":"Campeão não encontrado"}`;
 
 // RENDER
 function roleClass(r){return({Fighter:'tag-fighter',Lutador:'tag-fighter',Mage:'tag-mage',Mago:'tag-mage',Assassin:'tag-assassin',Assassino:'tag-assassin',Support:'tag-support',Suporte:'tag-support',Marksman:'tag-marksman',Atirador:'tag-marksman',Tank:'tag-tank'})[r]||'tag-default';}
-function styleLabel(v){return({dano_magico:'🔮 Mágico',dano_fisico:'⚔️ Físico',critico:'💥 Crítico',lentidao:'🧊 CC',cooldown:'⏱️ CDR',vida:'❤️ Vida',defesa:'🛡️ Tanque',velocidade:'💨 Vel.',on_hit:'⚡ On-Hit',sustain:'🩸 Sustain',lethality:'🗡️ Letal.',hibrido:'🌀 Híbrido'})[v]||v;}
+function styleLabel(v){return({dano_magico:'🔮 Mágico',dano_fisico:'⚔️ Físico',critico:'💥 Crítico',lentidao:'🧊 CC',cooldown:'⏱️ CDR',vida:'❤️ Vida',defesa:'🛡️ Tanque',velocidade:'💨 Vel.',on_hit:'⚡ On-Hit',sustain:'🩸 Sustain',lethality:'🗡️ Letal.',hibrido:'🌀 Híbrido',escudo:'🔵 Escudo'})[v]||v;}
 function tierInfo(t){return({Easy:{cls:'tier-easy',label:'✅ Favorável'},Even:{cls:'tier-even',label:'⚖️ Equilibrado'},Hard:{cls:'tier-hard',label:'⚠️ Difícil'},Counter:{cls:'tier-counter',label:'🚫 Hard Counter'}})[t]||{cls:'tier-even',label:'⚖️ Equilibrado'};}
 
 function renderResult(d){
